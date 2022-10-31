@@ -32,11 +32,11 @@
   if (TCP.dstPort == NETCACHE_PORT) {
     return parse_netcache;
   }
-  return switch(TCP.srcPort) {
-    case NETCACHE_PORT:
-      parse_netcache;
-    default:
-      ingress;
+  return switch (TCP.srcPort) {
+  case NETCACHE_PORT:
+    parse_netcache;
+  default:
+    ingress;
   }
 }
 
@@ -45,17 +45,17 @@
   if (UDP.dstPort == NETCACHE_PORT) {
     return parse_netcache;
   }
-  return switch(UDP.srcPort) {
-    case NETCACHE_PORT:
-      parse_netcache;
-    default:
-      ingress;
+  return switch (UDP.srcPort) {
+  case NETCACHE_PORT:
+    parse_netcache;
+  default:
+    ingress;
   }
 }
 
 @parser void parse_netcache() {
-    _extract(NETCACHE);
-    return ingress;
+  _extract(NETCACHE);
+  return ingress;
 }
 
 #endif // PARSERS_P4

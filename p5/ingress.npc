@@ -20,10 +20,6 @@
   ((standard_metadata.instance_type == pkt_instance_type_normal) ||            \
    (standard_metadata.instance_type == pkt_instance_type_replication))
 
-
-
-
-
 table CHECK_CACHE_EXIST() {
   key = { NETCACHE.key : exact;
 }
@@ -56,7 +52,6 @@ void check_cache_valid_act(STATUS_T Sta, uint<1> Valid) {
   }
 }
 
-
 table SET_CACHE_VALID() {
   key = { NETCACHE.key : exact;
 }
@@ -69,18 +64,17 @@ void set_cache_valid_act(STATUS_T Sta) {
 }
 
 table READ_KEY_IDX() {
-  key = {NETCACHE.key : exact;
-  }
-  STATUS_T Sta = _status();
-  uint<CACHE_IDX_WIDTH> cache_idx = _lookup();
-  actions = { read_key_idx_act(Sta,cache_idx);
-  }
-  size = NUM_CACHE;
+  key = { NETCACHE.key : exact;
+}
+STATUS_T Sta = _status();
+uint<CACHE_IDX_WIDTH> cache_idx = _lookup();
+actions = { read_key_idx_act(Sta, cache_idx);
+}
+size = NUM_CACHE;
 }
 void read_key_idx_act(STATUS_T Sta, uint<CACHE_IDX_WIDTH> cache_idx) {
   meta.cache_idx = cache_idx;
 }
-
 
 // key -> idx -> value
 
@@ -89,25 +83,24 @@ void read_key_idx_act(STATUS_T Sta, uint<CACHE_IDX_WIDTH> cache_idx) {
   // append to normal ingress logic
   if (_valid(NETCACHE)) {
     CHECK_CACHE_EXIST check_cache_exist = CHECK_CACHE_EXIST();
-    _apply(check_cache_exist);// if key_idx is stored in cache , set meta.cache_exist -> 1
+    _apply(check_cache_exist); // if key_idx is stored in cache , set
+                               // meta.cache_exist -> 1
     if (meta.cache_exist == 1) {
       if (NETCACHE.op == READ_QUERY) {
         CHECK_CACHE_VALID check_cache_valid = CHECK_CACHE_VALID();
-        _apply(check_cache_valid);//1bit stored whether key's value is a valid value
-        if(meta.cache_valid == 1) {
+        _apply(check_cache_valid); // 1bit stored whether key's value is a valid
+                                   // value
+        if (meta.cache_valid == 1) {
           READ_KEY_IDX read_key_idx = READ_KEY_IDX();
           _apply(read_key_idx);
         }
-      }
-      else if(NETCACHE.op == WRITE_QUERY) {
+      } else if (NETCACHE.op == WRITE_QUERY) {
 
-      }
-      else if (NETCACHE.op == UPDATE_COMPLETE) {
+      } else if (NETCACHE.op == UPDATE_COMPLETE) {
         SET_CACHE_VALID set_cache_valid = SET_CACHE_VALID();
         _apply(set_cache_valid);
       }
     }
     // if not cached, do nothing
   }
-  
 }
