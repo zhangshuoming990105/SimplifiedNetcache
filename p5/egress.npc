@@ -1,0 +1,56 @@
+#include "headers.h"
+
+table NETCACHE_VALUE_TBL() {
+    key = {
+        meta.cache_idx: index;
+    }
+    uint<NETCACHE_VALUE_WIDTH_MAX> Value = _lookup();
+    STATUS_T Sta = _status();
+    actions = {
+        setNetCachePacketValue(Sta, Value);
+    }
+}
+
+void setNetCachePacketValue(STATUS_T Sta, uint<NETCACHE_VALUE_WIDTH_MAX> Value) {
+    if(Sta == HIT){
+        if(meta.cache_valid){
+            NETCACHE.value = Value;
+            ret_pkt_to_sender();// only when to client, not server
+        }
+    }
+}
+
+//  modify packet can only be done in egress pipeline
+void ret_pkt_to_sender() {
+  // swap L2(mac)
+  MAC_ADDR_T macTmp;
+  macTmp = Ethernet.srcMac;
+  Ethernet.srcMac = Ethernet.dstMac;
+  Ethernet.dstMac = macTmp;
+
+  // swap L3(ipv4)
+  IPV4_ADDR_T ipTmp;
+  ipTmp = IPv4.srcAddr;
+  IPv4.srcAddr = IPv4.dstAddr;
+  IPv4.dstAddr = ipTmp;
+  
+  // swap L4(TCP/UDP)
+  uint<16> portTmp;
+  if (UDP.isValid()) {
+    portTmp = UDP.srcPort;
+    UDP.srcPort = UDP.dstPort;
+    UDP.dstPort = portTmp;
+  } else if (TCP.isValid()) {
+    portTmp = TCP.srcPort;
+    TCP.srcPort = TCP.dstPort;
+    TCP.dstPort = portTmp;
+  }
+}
+
+@control void egress() {
+  // append to egress logic
+  if (_valid(NETCACHE)&& meta.cache_exist  && meta.cache_valid) {
+    NETCACHE_VALUE_TBL netcache_val = NETCACHE_VALUE_TBL();
+    _apply(netcache_val);
+  }
+}

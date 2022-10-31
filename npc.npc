@@ -1,0 +1,28 @@
+//特性总结
+//1.ingress不能修改报文，指ret_packet_to_sender逻辑不能放在ingress
+// solution: 我们的流水线是ingress直接接egress的
+// 在ingress置一位metadata指示egress执行ret_packet_to_sender
+
+//2.actions要访问表项数据，需要把表项数据作为参数传入
+//table可以最多套一层table，table可以传参
+table TUNNEL_ENCAP_TBL() {
+    ARP_TBL underlayArpT = ARP_TBL();
+    _apply(underlayArpT);
+    EVSI_TBL underlayEvsi = EVSI_TBL();
+    _apply(underlayEvsi);
+    TUNNEL_TBL tunnelT = TUNNEL_TBL();
+    _apply(tunnelT);
+
+    actions = {
+        //可以通过传参调用
+        TunnelEncap(underlayArpT.ArpResp.MacAddr,underlayEvsi.VsiAttr,tunnelT.TunnelAttr);
+    }
+}
+
+//3.control block不能有执行语句，只能存在于action中
+
+//4.action只能有一个函数
+
+//5.register,counter都没有对应，需要用table？替换？
+
+//所有table都需要实例化再使用

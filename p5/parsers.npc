@@ -1,0 +1,61 @@
+#ifndef PARSERS_P4
+#define PARSERS_P4
+
+#include "headers.h"
+
+// parse Ethernet, ipv4, tcp/udp, then netcache
+
+@parser void parse_ethernet() {
+  _extract(Ethernet);
+  return switch (Ethernet.etherType) {
+  case ETHERTYPE_IPV4:
+    parse_ipv4;
+  default:
+    ingress;
+  }
+}
+
+@parser void parse_ipv4() {
+  _extract(IPv4);
+  return switch (IPv4.protocol) {
+  case IP_PROTOCOL_TCP:
+    parse_tcp;
+  case IP_PROTOCOL_UDP:
+    parse_udp;
+  default:
+    ingress;
+  }
+}
+
+@parser void parse_tcp() {
+  _extract(TCP);
+  if (TCP.dstPort == NETCACHE_PORT) {
+    return parse_netcache;
+  }
+  return switch(TCP.srcPort) {
+    case NETCACHE_PORT:
+      parse_netcache;
+    default:
+      ingress;
+  }
+}
+
+@parser void parse_udp() {
+  _extract(UDP);
+  if (UDP.dstPort == NETCACHE_PORT) {
+    return parse_netcache;
+  }
+  return switch(UDP.srcPort) {
+    case NETCACHE_PORT:
+      parse_netcache;
+    default:
+      ingress;
+  }
+}
+
+@parser void parse_netcache() {
+    _extract(NETCACHE);
+    return ingress;
+}
+
+#endif // PARSERS_P4
